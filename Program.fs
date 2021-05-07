@@ -1,3 +1,4 @@
+open Npush.Tools
 open Npush.Types
 open Npush.Utilities
 open Spectre.Console
@@ -40,7 +41,6 @@ type LogLevel =
 
 type ProgramOptions = {
     dryRun: bool
-    test: bool
     logLevel: LogLevel
 }
 
@@ -48,7 +48,6 @@ type ProgramOptions = {
 let main argv =
     let config = {
         dryRun = findFlag "dry" argv
-        test = findFlag "test" argv
         logLevel =
             match (findArg "log" argv) with
             | Some level ->
@@ -83,6 +82,7 @@ let main argv =
     log LogLevel.Info $"📦 Loaded package.json: {filePath}"
     log LogLevel.Info $"✏️  Package name: [b]{package.name}[/]"
     log LogLevel.Info $"#️⃣  Package version: [b]{fVer package.version.semver package.version.stage}[/]"
+    log LogLevel.Info ""
 
     let updateTypeArg = findArg "update|u" argv
     let nextStageArg = findArg "stage|s" argv
@@ -125,20 +125,89 @@ let main argv =
     let nextFullVersion = fVer nextVersion nextStage
     log LogLevel.Info $"Next version will be: [b]{nextFullVersion}[/]"
 
+    let logProcess (text: string) = log LogLevel.Info $"  ⏳ {text.EscapeMarkup()}..."
+    let logDone (text: string) = log LogLevel.Info $"  ✅ {text.EscapeMarkup()}"
+    let logErr (text: string) = log LogLevel.Info $"  ❌ {text.EscapeMarkup()}"
+
+    logProcess "updating version in package.json"
     setJsonValue ("version", nextFullVersion) fileJson.Value
     writeFile filePath (fileJson.Value.ToString())
+    logDone "package.json updated"
 
-    if config.test then
-        writeFile filePath (fileJson.Value.ToString())
-    elif config.dryRun then
-        log LogLevel.Info $"Performing [b]dry run[/]..."
-        log LogLevel.Debug $"Running 'npm publish --dry-run'"
-        execCmd "npm" [ "publish"; "--dry-run" ]
-        log LogLevel.Debug $"Restoring package.json version..."
-        setJsonValue ("version", fVer package.version.semver package.version.stage) fileJson.Value
-        writeFile filePath (fileJson.Value.ToString())
+    if config.dryRun then
+        log LogLevel.Info "  ⚠ ️performing dry run"
+
+        // 1. Stage package.json
+        logProcess "stage package.json"
+        match git.add ["package.json"] with
+        | Ok _ -> logDone "package.json staged"
+        | Error e -> terminate "Staging package.json failed! {e}" 1
+ 
+        // 2. Create commit
+        logProcess "commit package.json"
+        match git.commit "Bump version to {nextFullVersion}" with
+        | Ok _ -> logDone "package.json committed"
+        | Error e -> terminate "Creating commit failed! {e}" 1
+
+        // 3. Create tag
+        logProcess "create tag"
+        match git.tag $"v{nextFullVersion}" with
+        | Ok _ -> logDone "tag created"
+        | Error e -> terminate "Creating tag failed! {e}" 1
+
+        // 4. Npm publish
+        logProcess "publish package to npm"
+        let publishResult = npm.publish ["--dry-run"]
+        match publishResult with
+        | Ok _ -> logDone "package published"
+        | Error e -> logErr $"publishing package failed: {e}"
+
+        match git.reset "--soft" "HEAD~1" with
+        | Ok _ -> logDone "reverted update commit"
+        | Error e -> terminate $"Reverting commit failed! {e}" 1
+
+        match publishResult with
+        | Ok res -> log LogLevel.Info res
+        | Error _ -> ()
     else
-        log LogLevel.Info "📦 Publishing package..."
-        writeFile filePath (fileJson.Value.ToString())
+        // 1. Stage package.json
+        logProcess "stage package.json"
+        match git.add ["package.json"] with
+        | Ok _ -> logDone "package.json staged"
+        | Error e -> terminate "Staging package.json failed! {e}" 1
+ 
+        // 2. Create commit
+        logProcess "commit package.json"
+        match git.commit "Bump version to {nextFullVersion}" with
+        | Ok _ -> logDone "package.json committed"
+        | Error e -> terminate "Creating commit failed! {e}" 1
+
+        // 3. Create tag
+        logProcess "create tag"
+        match git.tag $"v{nextFullVersion}" with
+        | Ok _ -> logDone "tag created"
+        | Error e -> terminate "Creating tag failed! {e}" 1
+
+        // 4. Npm publish
+        logProcess "publish package to npm"
+        let publishResult = npm.publish []
+        match publishResult with
+        | Ok _ -> logDone "package published"
+        | Error _ ->
+            logErr "publishing package failed"
+            logProcess "revert version commit"
+            match git.reset "--soft" "HEAD~1" with
+            | Ok _ -> logDone "reverted update commit"
+            | Error e -> terminate $"Reverting commit failed! {e}" 1
+
+        // 5. Git push
+        logProcess "push update to origin"
+        match git.push "origin" with
+        | Ok _ -> logDone "update pushed to origin repo"
+        | Error e -> terminate $"Pushing update commit failed! {e}" 1
+
+        match publishResult with
+        | Ok res -> log LogLevel.Info res
+        | Error _ -> ()
 
     0 // return an integer exit code
