@@ -5,6 +5,7 @@
     <PackAsTool>true</PackAsTool>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Tools.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Utilities.fs" />
     <Compile Include="Program.fs" />
