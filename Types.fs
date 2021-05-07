@@ -28,3 +28,9 @@ type PackageJson = {
   name: string
   version: PackageVersion
 }
+
+type CommandResult = {
+  code: int
+  out: string
+  err: string
+}

@@ -6,6 +6,7 @@ open System.IO
 open System.Text.RegularExpressions
 open Newtonsoft.Json.Linq
 open Spectre.Console
+open System
 
 /// Get the full path by the name of a file in the current working directory.
 let getFilePath name =
@@ -136,7 +137,10 @@ let setJsonValue (prop: string, value: 'a) (json: JObject) =
 let execCmd (cmd: string) (args: string list) =
   let proc = new Process ()
   proc.StartInfo.CreateNoWindow <- true
-  proc.StartInfo.FileName <- "/bin/bash"
+  proc.StartInfo.FileName <-
+    if OperatingSystem.IsWindows() then "cmd.exe"
+    else "/bin/bash"
+  proc.StartInfo.RedirectStandardInput <- true
   proc.StartInfo.RedirectStandardInput <- true
   proc.StartInfo.RedirectStandardOutput <- true
   proc.Start() |> ignore
@@ -147,7 +151,12 @@ let execCmd (cmd: string) (args: string list) =
   proc.StandardInput.Flush()
   proc.StandardInput.Close()
   proc.WaitForExit()
-  System.Console.WriteLine(proc.StandardOutput.ReadToEnd())
+
+  {
+    code = proc.ExitCode
+    err = proc.StandardError.ReadToEnd()
+    out = proc.StandardOutput.ReadToEnd()
+  }
 
 let writeFile (path: string) (contents: string) =
   File.WriteAllText(path, contents)
