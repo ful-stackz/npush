@@ -50,6 +50,7 @@ You can also provide the required configuration as command line arguments and sk
 | `--update` or `-u` | `major`, `minor` or `patch` | Required | Specify the update type. See [update types](#update-types) |
 | `--stage` or `-s` | `release`, `preview`, `beta` or `alpha` | Required | Specify the release stage. See [release stages](#release-stages) |
 | `--dry` | `true`, `t`, `false` or `f` | `false` | Run `npush` in dry mode. It will perform all operations as normal, except the package will not be published and the local area will be reverted at the end. |
+| `--log` | `info` or `debug` | `info` | Specify the log level. |
 
 #### Update types
 
