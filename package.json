@@ -1,5 +1,5 @@
 {
   "name": "sample-package",
-  "version": "3.0.0-preview",
+  "version": "1.0.0",
   "description": "A sample package file for testing npush with."
 }

@@ -31,6 +31,6 @@ type PackageJson = {
 
 type CommandResult = {
   code: int
-  out: string
-  err: string
+  stdout: string
+  stderr: string
 }

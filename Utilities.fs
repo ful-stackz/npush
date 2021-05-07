@@ -141,7 +141,7 @@ let execCmd (cmd: string) (args: string list) =
     if OperatingSystem.IsWindows() then "cmd.exe"
     else "/bin/bash"
   proc.StartInfo.RedirectStandardInput <- true
-  proc.StartInfo.RedirectStandardInput <- true
+  proc.StartInfo.RedirectStandardError <- true
   proc.StartInfo.RedirectStandardOutput <- true
   proc.Start() |> ignore
 
@@ -154,8 +154,8 @@ let execCmd (cmd: string) (args: string list) =
 
   {
     code = proc.ExitCode
-    err = proc.StandardError.ReadToEnd()
-    out = proc.StandardOutput.ReadToEnd()
+    stderr = proc.StandardError.ReadToEnd()
+    stdout = proc.StandardOutput.ReadToEnd()
   }
 
 let writeFile (path: string) (contents: string) =

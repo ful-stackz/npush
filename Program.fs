@@ -124,6 +124,7 @@ let main argv =
 
     let nextFullVersion = fVer nextVersion nextStage
     log LogLevel.Info $"Next version will be: [b]{nextFullVersion}[/]"
+    log LogLevel.Info ""
 
     let logProcess (text: string) = log LogLevel.Info $"  ⏳ {text.EscapeMarkup()}..."
     let logDone (text: string) = log LogLevel.Info $"  ✅ {text.EscapeMarkup()}"
@@ -135,58 +136,64 @@ let main argv =
     logDone "package.json updated"
 
     if config.dryRun then
-        log LogLevel.Info "  ⚠ ️performing dry run"
-
         // 1. Stage package.json
         logProcess "stage package.json"
         match git.add ["package.json"] with
         | Ok _ -> logDone "package.json staged"
-        | Error e -> terminate "Staging package.json failed! {e}" 1
+        | Error e -> terminate $"Staging package.json failed! {e}" 1
  
         // 2. Create commit
         logProcess "commit package.json"
-        match git.commit "Bump version to {nextFullVersion}" with
+        match git.commit $"Bump version to {nextFullVersion}" with
         | Ok _ -> logDone "package.json committed"
-        | Error e -> terminate "Creating commit failed! {e}" 1
+        | Error e -> terminate $"Creating commit failed! {e}" 1
 
         // 3. Create tag
         logProcess "create tag"
         match git.tag $"v{nextFullVersion}" with
         | Ok _ -> logDone "tag created"
-        | Error e -> terminate "Creating tag failed! {e}" 1
+        | Error e -> terminate $"Creating tag failed! {e}" 1
 
         // 4. Npm publish
-        logProcess "publish package to npm"
+        logProcess "pack without publishing"
         let publishResult = npm.publish ["--dry-run"]
         match publishResult with
-        | Ok _ -> logDone "package published"
-        | Error e -> logErr $"publishing package failed: {e}"
+        | Ok _ -> logDone "packaging done"
+        | Error e -> logErr $"packaging failed: {e}"
 
-        match git.reset "--soft" "HEAD~1" with
+        // 5. Delete tag
+        logProcess "delete tag"
+        match git.tag $"-d v{nextFullVersion}" with
+        | Ok _ -> logDone "tag deleted"
+        | Error e -> logErr $"deleting tag failed: {e}"
+
+        // 6. Revert commit
+        logProcess "revert commit"
+        match git.reset "mixed" "HEAD~1" with
         | Ok _ -> logDone "reverted update commit"
         | Error e -> terminate $"Reverting commit failed! {e}" 1
 
         match publishResult with
-        | Ok res -> log LogLevel.Info res
+        | Ok res -> log LogLevel.Info $"\n{res.EscapeMarkup()}"
         | Error _ -> ()
     else
         // 1. Stage package.json
         logProcess "stage package.json"
         match git.add ["package.json"] with
         | Ok _ -> logDone "package.json staged"
-        | Error e -> terminate "Staging package.json failed! {e}" 1
+        | Error e -> terminate $"Staging package.json failed! {e}" 1
  
         // 2. Create commit
         logProcess "commit package.json"
-        match git.commit "Bump version to {nextFullVersion}" with
+        match git.commit $"Bump version to {nextFullVersion}" with
         | Ok _ -> logDone "package.json committed"
-        | Error e -> terminate "Creating commit failed! {e}" 1
+        | Error e -> terminate $"Creating commit failed! {e}" 1
 
         // 3. Create tag
         logProcess "create tag"
         match git.tag $"v{nextFullVersion}" with
         | Ok _ -> logDone "tag created"
-        | Error e -> terminate "Creating tag failed! {e}" 1
+        | Error e -> terminate $"Creating tag failed! {e}" 1
 
         // 4. Npm publish
         logProcess "publish package to npm"
@@ -196,7 +203,7 @@ let main argv =
         | Error _ ->
             logErr "publishing package failed"
             logProcess "revert version commit"
-            match git.reset "--soft" "HEAD~1" with
+            match git.reset "mixed" "HEAD~1" with
             | Ok _ -> logDone "reverted update commit"
             | Error e -> terminate $"Reverting commit failed! {e}" 1
 
@@ -207,7 +214,7 @@ let main argv =
         | Error e -> terminate $"Pushing update commit failed! {e}" 1
 
         match publishResult with
-        | Ok res -> log LogLevel.Info res
+        | Ok res -> log LogLevel.Info $"\n{res.EscapeMarkup()}"
         | Error _ -> ()
 
     0 // return an integer exit code

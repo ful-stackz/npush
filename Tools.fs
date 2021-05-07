@@ -36,7 +36,7 @@ module git =
     else Ok ""
 
   let reset (mode: string) (target: string) =
-    let result = execCmd "git" [ $"--{mode}"; target ]
+    let result = execCmd "git" [ "reset"; $"--{mode}"; target ]
     if result.code <> 0
     then Error $"git reset exited with code {result.code}"
     else Ok ""
