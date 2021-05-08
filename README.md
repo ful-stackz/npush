@@ -49,7 +49,7 @@ You can also provide the required configuration as command line arguments and sk
 | :--- | :----- | :------ | :---------- |
 | `--update` or `-u` | `major`, `minor` or `patch` | Required | Specify the update type. See [update types](#update-types) |
 | `--stage` or `-s` | `release`, `preview`, `beta` or `alpha` | Required | Specify the release stage. See [release stages](#release-stages) |
-| `--dry` | `true`, `t`, `false` or `f` | `false` | Run `npush` in dry mode. It will perform all operations as normal, except the package will not be published and the local area will be reverted at the end. |
+| `--dry` | `true`, `t`, `false` or `f` | `false` | Run `npush` in dry mode. It will perform all operations as normal, except the package will not be published and the local area will be reverted at the end. **Note** that `npush` will perform a `mixed` reset instead of a `hard` one in order to prevent losing any local unstaged/uncommitted changes. |
 | `--log` | `info` or `debug` | `info` | Specify the log level. |
 | `--confirm` or `-c` | `true`, `t`, `false` or `f` | `false` | Specify whether a confirmation is required before starting the update and publish process. |
 
