@@ -35,6 +35,11 @@ let promptNextStage (version: SemVer) =
         | Stage.Alpha -> $"{semVer}-alpha"
     AnsiConsole.Prompt prompt
 
+let promptConfirm (text: string) =
+    let prompt = new ConfirmationPrompt (text)
+    prompt.DefaultValue <- true
+    AnsiConsole.Prompt prompt
+
 type LogLevel =
     | Debug = 0
     | Info = 1
@@ -42,6 +47,7 @@ type LogLevel =
 type ProgramOptions = {
     dryRun: bool
     logLevel: LogLevel
+    requireConfirmation: bool
 }
 
 [<EntryPoint>]
@@ -55,6 +61,7 @@ let main argv =
                 | "DEBUG" -> LogLevel.Debug
                 | _ -> LogLevel.Info
             | None -> LogLevel.Debug
+        requireConfirmation = findFlag "confirm|c" argv
     }
  
     let log (level: LogLevel) (text: string) =
@@ -125,6 +132,11 @@ let main argv =
     let nextFullVersion = fVer nextVersion nextStage
     log LogLevel.Info $"Next version will be: [b]{nextFullVersion}[/]"
     log LogLevel.Info ""
+
+    if config.requireConfirmation then
+        match promptConfirm "Proceed with update?" with
+        | true -> log LogLevel.Info ""
+        | false -> exit 0
 
     let logProcess (text: string) = log LogLevel.Info $"  ⏳ {text.EscapeMarkup()}..."
     let logDone (text: string) = log LogLevel.Info $"  ✅ {text.EscapeMarkup()}"

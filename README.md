@@ -51,6 +51,7 @@ You can also provide the required configuration as command line arguments and sk
 | `--stage` or `-s` | `release`, `preview`, `beta` or `alpha` | Required | Specify the release stage. See [release stages](#release-stages) |
 | `--dry` | `true`, `t`, `false` or `f` | `false` | Run `npush` in dry mode. It will perform all operations as normal, except the package will not be published and the local area will be reverted at the end. |
 | `--log` | `info` or `debug` | `info` | Specify the log level. |
+| `--confirm` or `-c` | `true`, `t`, `false` or `f` | `false` | Specify whether a confirmation is required before starting the update and publish process. |
 
 #### Update types
 
