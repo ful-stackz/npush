@@ -45,6 +45,8 @@ You can also provide the required configuration as command line arguments and sk
 
 ### Arguments
 
+> Arguments are also accessible via `npush -h|--help`
+
 | Name | Values | Default | Description |
 | :--- | :----- | :------ | :---------- |
 | `--update` or `-u` | `major`, `minor` or `patch` | Required | Specify the update type. See [update types](#update-types) |

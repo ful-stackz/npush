@@ -2,6 +2,7 @@ open Npush.Tools
 open Npush.Types
 open Npush.Utilities
 open Spectre.Console
+open System.Reflection
 
 [<Literal>]
 let logo = """
@@ -9,6 +10,39 @@ let logo = """
     (  ( \(  _ \/ )( \/ ___)/ )( \
     /    / ) __/) \/ (\___ \) __ (
     \_)__)(__)  \____/(____/\_)(_/
+"""
+
+[<Literal>]
+let helpText = """
+[b]npush (%version%)[/]
+
+[b]Usage[/]:
+    npush [[arguments]] [[flags]]
+
+[b]Arguments[/]:
+    --update, -u <major | minor | patch>
+        Specify the update type.
+        major: 1.2.3 -> 2.0.0
+        minor: 1.2.3 -> 1.3.0
+        patch: 1.2.3 -> 1.2.4
+
+    --stage, -s <release | preview | beta | alpha>
+        Specify the release stage.
+        release: 1.2.3 -> 1.2.3
+        preview: 1.2.3 -> 1.2.3-preview
+        beta:    1.2.3 -> 1.2.3-beta
+        alpha:   1.2.3 -> 1.2.3-alpha
+
+    --log <info | debug>
+        Specify the log level. Defaults to info.
+
+[b]Flags[/]:
+    --dry
+        Run npush in dry mode. Performs as normal but does NOT publish the package
+        and performs a git reset --mixed at the end.
+
+    --confirm, -c
+        Require confirmation before performing the update and publishing steps.
 """
 
 let promptUpdateType (current: SemVer) =
@@ -52,6 +86,11 @@ type ProgramOptions = {
 
 [<EntryPoint>]
 let main argv =
+    if findFlag "help|h" argv then
+        let helpOutput = helpText.Replace("%version%", Assembly.GetExecutingAssembly().GetName().Version.ToString(3))
+        AnsiConsole.MarkupLine helpOutput
+        exit 0
+
     let config = {
         dryRun = findFlag "dry" argv
         logLevel =
